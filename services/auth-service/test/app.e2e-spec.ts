@@ -5,6 +5,7 @@ import { App } from 'supertest/types';
 import { getModelToken, getConnectionToken } from '@nestjs/mongoose';
 import { AppModule } from './../src/app.module';
 import { User } from './../src/users/user.schema';
+import { GraphQLTestResponse } from './../src/auth/types/test.types';
 import * as bcrypt from 'bcryptjs';
 
 // Mock bcrypt
@@ -12,25 +13,6 @@ jest.mock('bcryptjs', () => ({
   hash: jest.fn().mockResolvedValue('hashed_password'),
   compare: jest.fn(),
 }));
-
-interface GraphQLResponse {
-  body: {
-    data?: {
-      ping?: string;
-      register?: {
-        accessToken: string;
-        userId: string;
-        roles: string[];
-      };
-      login?: {
-        accessToken: string;
-        userId: string;
-        roles: string[];
-      };
-    };
-    errors?: { message: string }[];
-  };
-}
 
 describe('Auth Service (e2e)', () => {
   let app: INestApplication<App>;
@@ -101,7 +83,7 @@ describe('Auth Service (e2e)', () => {
           `,
         })
         .expect(200)
-        .expect((res: GraphQLResponse) => {
+        .expect((res: GraphQLTestResponse) => {
           expect(res.body.data?.ping).toBe('ok');
         });
     });
@@ -132,7 +114,7 @@ describe('Auth Service (e2e)', () => {
           `,
         })
         .expect(200)
-        .expect((res: GraphQLResponse) => {
+        .expect((res: GraphQLTestResponse) => {
           expect(res.body.data?.register).toBeDefined();
           expect(res.body.data?.register?.accessToken).toBeDefined();
           expect(res.body.data?.register?.userId).toBeDefined();
@@ -162,7 +144,7 @@ describe('Auth Service (e2e)', () => {
           `,
         })
         .expect(200)
-        .expect((res: GraphQLResponse) => {
+        .expect((res: GraphQLTestResponse) => {
           expect(res.body.data?.register).toBeDefined();
           expect(res.body.data?.register?.accessToken).toBeDefined();
           expect(res.body.data?.register?.userId).toBeDefined();
@@ -193,7 +175,7 @@ describe('Auth Service (e2e)', () => {
           `,
         })
         .expect(200)
-        .expect((res: GraphQLResponse) => {
+        .expect((res: GraphQLTestResponse) => {
           expect(res.body.errors).toBeDefined();
           expect(res.body.errors?.[0]?.message).toBe('Email already in use');
         });
@@ -218,7 +200,7 @@ describe('Auth Service (e2e)', () => {
           `,
         })
         .expect(200)
-        .expect((res: GraphQLResponse) => {
+        .expect((res: GraphQLTestResponse) => {
           expect(res.body.errors).toBeDefined();
           expect(res.body.errors?.[0]?.message).toBe('Bad Request Exception');
         });
@@ -243,7 +225,7 @@ describe('Auth Service (e2e)', () => {
           `,
         })
         .expect(200)
-        .expect((res: GraphQLResponse) => {
+        .expect((res: GraphQLTestResponse) => {
           expect(res.body.errors).toBeDefined();
           expect(res.body.errors?.[0]?.message).toBe('Bad Request Exception');
         });
@@ -274,7 +256,7 @@ describe('Auth Service (e2e)', () => {
           `,
         })
         .expect(200)
-        .expect((res: GraphQLResponse) => {
+        .expect((res: GraphQLTestResponse) => {
           expect(res.body.data?.login).toBeDefined();
           expect(res.body.data?.login?.accessToken).toBeDefined();
           expect(res.body.data?.login?.userId).toBeDefined();
@@ -304,7 +286,7 @@ describe('Auth Service (e2e)', () => {
           `,
         })
         .expect(200)
-        .expect((res: GraphQLResponse) => {
+        .expect((res: GraphQLTestResponse) => {
           expect(res.body.errors).toBeDefined();
           expect(res.body.errors?.[0]?.message).toBe('Invalid credentials');
         });
@@ -333,7 +315,7 @@ describe('Auth Service (e2e)', () => {
           `,
         })
         .expect(200)
-        .expect((res: GraphQLResponse) => {
+        .expect((res: GraphQLTestResponse) => {
           expect(res.body.errors).toBeDefined();
           expect(res.body.errors?.[0]?.message).toBe('Invalid credentials');
         });
@@ -357,7 +339,7 @@ describe('Auth Service (e2e)', () => {
           `,
         })
         .expect(200)
-        .expect((res: GraphQLResponse) => {
+        .expect((res: GraphQLTestResponse) => {
           expect(res.body.errors).toBeDefined();
           expect(res.body.errors?.[0]?.message).toBe('Bad Request Exception');
         });
@@ -381,7 +363,7 @@ describe('Auth Service (e2e)', () => {
           `,
         })
         .expect(200)
-        .expect((res: GraphQLResponse) => {
+        .expect((res: GraphQLTestResponse) => {
           expect(res.body.errors).toBeDefined();
           expect(res.body.errors?.[0]?.message).toBe('Bad Request Exception');
         });
