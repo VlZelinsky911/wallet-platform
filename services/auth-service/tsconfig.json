@@ -3,7 +3,7 @@
     "target": "ES2022",
     "module": "CommonJS",
     "moduleResolution": "Node",
-		"ignoreDeprecations": "6.0",
+    "ignoreDeprecations": "6.0",
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -17,7 +17,7 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "outDir": "./dist",
-    "types": ["node", "express"]
+    "types": ["node", "express", "jest"]
   },
-  "exclude": ["node_modules", "dist", "test", "**/*.spec.ts"]
+  "exclude": ["node_modules", "dist"]
 }
