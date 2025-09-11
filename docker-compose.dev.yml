@@ -1,0 +1,196 @@
+version: "3.9"
+
+services:
+  # Infrastructure services
+  mongo-auth:
+    image: mongo:7
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=dev_user
+      - MONGO_INITDB_ROOT_PASSWORD=dev_password
+      - MONGO_INITDB_DATABASE=auth
+    volumes:
+      - mongo_auth_data:/data/db
+      - ./scripts/init-mongo-auth.js:/docker-entrypoint-initdb.d/init.js:ro
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo-users:
+    image: mongo:7
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=dev_user
+      - MONGO_INITDB_ROOT_PASSWORD=dev_password
+      - MONGO_INITDB_DATABASE=users
+    volumes:
+      - mongo_users_data:/data/db
+    ports:
+      - "27018:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo-wallets:
+    image: mongo:7
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=dev_user
+      - MONGO_INITDB_ROOT_PASSWORD=dev_password
+      - MONGO_INITDB_DATABASE=wallets
+    volumes:
+      - mongo_wallets_data:/data/db
+    ports:
+      - "27019:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=dev_user
+      - RABBITMQ_DEFAULT_PASS=dev_password
+      - RABBITMQ_DEFAULT_VHOST=wallet_platform
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Application services
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - MONGO_URI_AUTH=mongodb://dev_user:dev_password@mongo-auth:27017/auth?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - LOG_LEVEL=debug
+    volumes:
+      - ./services/auth-service/src:/app/src:ro
+      - ./shared:/app/shared:ro
+    ports:
+      - "3001:3001"
+    depends_on:
+      mongo-auth:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  user-service:
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - MONGO_URI_USERS=mongodb://dev_user:dev_password@mongo-users:27017/users?authSource=admin
+      - RABBITMQ_URL=amqp://dev_user:dev_password@rabbitmq:5672/wallet_platform
+      - AUTH_SERVICE_URL=http://auth-service:3001
+    volumes:
+      - ./services/user-service/src:/app/src:ro
+      - ./shared:/app/shared:ro
+    ports:
+      - "3002:3002"
+    depends_on:
+      mongo-users:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  wallet-service:
+    build:
+      context: ./services/wallet-service
+      dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+      - PORT=3003
+      - MONGO_URI_WALLETS=mongodb://dev_user:dev_password@mongo-wallets:27017/wallets?authSource=admin
+      - RABBITMQ_URL=amqp://dev_user:dev_password@rabbitmq:5672/wallet_platform
+      - AUTH_SERVICE_URL=http://auth-service:3001
+    volumes:
+      - ./services/wallet-service/src:/app/src:ro
+      - ./shared:/app/shared:ro
+    ports:
+      - "3003:3003"
+    depends_on:
+      mongo-wallets:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Monitoring & Observability
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  default:
+    name: wallet_platform_network

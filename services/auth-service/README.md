@@ -1,98 +1,402 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 🔐 Auth Service
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Сервіс автентифікації та авторизації для Wallet Platform. Використовує GraphQL API для взаємодії з клієнтами.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🎯 Основний функціонал
 
-## Description
+- **Реєстрація користувачів** з валідацією email та пароля
+- **Автентифікація** через JWT токени
+- **Авторизація** на основі ролей користувачів
+- **GraphQL API** з Apollo Server
+- **MongoDB** для зберігання даних користувачів
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🚀 Швидкий старт
 
-## Project setup
+### Локальний запуск
 
 ```bash
-$ npm install
+# Встановлення залежностей
+npm install
+
+# Запуск MongoDB (або використовуйте Docker)
+# mongod --port 27017
+
+# Встановлення змінних середовища
+export MONGO_URI_AUTH=mongodb://localhost:27017/auth
+export JWT_SECRET=your-secret-key
+
+# Запуск у режимі розробки
+npm run start:dev
+
+# Запуск у production режимі
+npm run start:prod
 ```
 
-## Compile and run the project
+### Docker запуск
 
 ```bash
-# development
-$ npm run start
+# З основного проекту
+docker-compose up auth-service -d
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+# Або локальний білд
+docker build -t auth-service .
+docker run -p 5000:5000 auth-service
 ```
 
-## Run tests
+## 📡 GraphQL API
+
+### Endpoint
+
+- **URL**: http://localhost:5000/graphql
+- **Playground**: Доступний в браузері для testing
+
+### Schema
+
+#### Queries
+
+```graphql
+type Query {
+  # Перевірка доступності сервісу
+  ping: String!
+}
+```
+
+#### Mutations
+
+```graphql
+type Mutation {
+  # Реєстрація нового користувача
+  register(input: RegisterInput!): AuthResponse!
+
+  # Вхід користувача
+  login(input: LoginInput!): AuthResponse!
+}
+```
+
+#### Types
+
+```graphql
+# Вхідні дані для реєстрації
+input RegisterInput {
+  email: String! # Валідний email
+  password: String! # Мінімум 6 символів
+  name: String # Опціональне ім'я
+}
+
+# Вхідні дані для входу
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+# Відповідь після автентифікації
+type AuthResponse {
+  accessToken: String! # JWT токен
+  userId: String! # ID користувача
+  roles: [String!]! # Ролі користувача
+}
+```
+
+## 🔧 Приклади запитів
+
+### Ping
+
+```graphql
+query {
+  ping
+}
+```
+
+**Відповідь:**
+
+```json
+{
+  "data": {
+    "ping": "ok"
+  }
+}
+```
+
+### Реєстрація
+
+```graphql
+mutation {
+  register(
+    input: {
+      email: "john@example.com"
+      password: "securePassword123"
+      name: "John Doe"
+    }
+  ) {
+    accessToken
+    userId
+    roles
+  }
+}
+```
+
+**Відповідь:**
+
+```json
+{
+  "data": {
+    "register": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "userId": "64f1a2b3c4d5e6f7g8h9i0j1",
+      "roles": ["user"]
+    }
+  }
+}
+```
+
+### Вхід
+
+```graphql
+mutation {
+  login(input: { email: "john@example.com", password: "securePassword123" }) {
+    accessToken
+    userId
+    roles
+  }
+}
+```
+
+## 🗃️ База даних
+
+### MongoDB Schema
+
+```typescript
+// User Document
+{
+  _id: ObjectId,
+  email: string,           // Унікальний email
+  passwordHash: string,    // Bcrypt хеш пароля
+  name?: string,          // Опціональне ім'я
+  roles: string[],        // Масив ролей ["user", "admin", ...]
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+### Індекси
+
+```javascript
+// Унікальний індекс на email
+db.users.createIndex({ email: 1 }, { unique: true });
+
+// Індекс на ролі для швидкого пошуку
+db.users.createIndex({ roles: 1 });
+```
+
+## 🔐 Безпека
+
+### JWT Токени
+
+- **Алгоритм**: HS256
+- **Термін дії**: Configurable (за замовчуванням: 24 години)
+- **Payload**: userId, email, roles
+
+### Паролі
+
+- **Хешування**: bcrypt з salt rounds = 10
+- **Валідація**: Мінімум 6 символів
+- **Політика**: Рекомендується використовувати складні паролі
+
+### Валідація
+
+- **Email**: Валідний email формат
+- **Вхідні дані**: class-validator decorators
+- **GraphQL**: Автоматична валідація schema
+
+## 🧪 Тестування
+
+### Unit тести
 
 ```bash
-# unit tests
-$ npm run test
+# Запуск всіх тестів
+npm test
 
-# e2e tests
-$ npm run test:e2e
+# З watch режимом
+npm run test:watch
 
-# test coverage
-$ npm run test:cov
+# З coverage
+npm run test:cov
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### E2E тести
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+# Запуск e2e тестів
+npm run test:e2e
+
+# З coverage
+npm run test:e2e:cov
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Тестові дані
 
-## Resources
+```graphql
+# Тестовий користувач
+{
+  "email": "test@example.com",
+  "password": "password123",
+  "name": "Test User"
+}
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+## ⚙️ Конфігурація
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### Змінні середовища
 
-## Support
+```bash
+# MongoDB
+MONGO_URI_AUTH=mongodb://localhost:27017/auth
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+# JWT
+JWT_SECRET=your-super-secure-secret-key
 
-## Stay in touch
+# Server
+PORT=5000
+NODE_ENV=development|production|test
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+# Logging
+LOG_LEVEL=debug|info|warn|error
+```
 
-## License
+### GraphQL налаштування
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+```typescript
+GraphQLModule.forRoot<ApolloDriverConfig>({
+  driver: ApolloDriver,
+  autoSchemaFile: true, // Автогенерація schema
+  playground: true, // GraphQL Playground
+  introspection: true, // Introspection queries
+  csrfPrevention: false, // CSRF захист
+});
+```
+
+## 📊 Логування та моніторинг
+
+### Логи
+
+```typescript
+// Приклади логів
+[LOG] Starting Nest application...
+[LOG] GraphQLModule dependencies initialized
+[LOG] Nest application successfully started
+```
+
+### Health Check
+
+```bash
+# Endpoint для перевірки здоров'я
+curl http://localhost:5000/health
+
+# Відповідь
+{"status": "ok"}
+```
+
+### Metrics
+
+- Готовість до інтеграції з Prometheus
+- GraphQL query metrics
+- Database connection health
+
+## 🔄 Інтеграція з іншими сервісами
+
+### User Service
+
+- Передача JWT токена у заголовках
+- Валідація токена для авторизації
+
+### Wallet Service
+
+- Аналогічна авторизація через JWT
+- Роль-based доступ до ресурсів
+
+## 🚀 Deployment
+
+### Docker
+
+```dockerfile
+# Multi-stage build для оптимізації
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npx nest build
+
+FROM node:20-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=deps /app/dist dist
+COPY package*.json ./
+RUN npm ci --omit=dev
+EXPOSE 5000
+CMD ["node","dist/main.js"]
+```
+
+### Health Checks
+
+```yaml
+healthcheck:
+  test: ['CMD', 'curl', '-f', 'http://localhost:5000/health']
+  interval: 30s
+  timeout: 10s
+  retries: 3
+```
+
+## 🐛 Troubleshooting
+
+### Поширені проблеми
+
+1. **MongoDB connection error**
+
+   ```bash
+   # Перевірте чи запущений MongoDB
+   docker ps | grep mongo
+
+   # Перевірте змінну середовища
+   echo $MONGO_URI_AUTH
+   ```
+
+2. **JWT secret not set**
+
+   ```bash
+   # Встановіть JWT_SECRET
+   export JWT_SECRET=your-secret-key
+   ```
+
+3. **GraphQL playground не працює**
+   ```typescript
+   // Переконайтесь що playground увімкнений
+   playground: true,
+   introspection: true,
+   ```
+
+### Debugging
+
+```bash
+# Запуск з debug mode
+npm run start:debug
+
+# Логи з Docker
+docker-compose logs -f auth-service
+```
+
+## 📝 TODO
+
+- [ ] Refresh токени
+- [ ] OAuth інтеграція (Google, Facebook)
+- [ ] Rate limiting
+- [ ] Account verification через email
+- [ ] Password reset функціональність
+- [ ] 2FA authentication
+
+---
+
+**🔗 Зв'язані сервіси:**
+
+- [User Service](../user-service/README.md)
+- [Wallet Service](../wallet-service/README.md)
