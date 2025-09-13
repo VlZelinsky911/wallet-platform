@@ -84,18 +84,19 @@ services:
   wallet-service:
     build: ./services/wallet-service
     environment:
-      - PORT=5002
-      - MONGO_URI_WALLETS=mongodb://mongo-wallets:27017/wallets
+      - PORT=3002
+      - MONGODB_URI=mongodb://mongo-wallets:27017/wallet-service
       - RABBITMQ_URL=amqp://admin:password@rabbitmq:5672
+      - NODE_ENV=production
     depends_on:
       mongo-wallets:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    ports: ["5002:5002"]
+    ports: ["3002:3002"]
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3002/graphql"]
       interval: 30s
       timeout: 10s
       retries: 3
