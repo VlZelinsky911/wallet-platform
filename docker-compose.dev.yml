@@ -87,8 +87,8 @@ services:
       dockerfile: Dockerfile.dev
     environment:
       - NODE_ENV=development
-      - PORT=3001
-      - MONGO_URI_AUTH=mongodb://dev_user:dev_password@mongo-auth:27017/auth?authSource=admin
+      - PORT=3000
+      - MONGODB_URI=mongodb://dev_user:dev_password@mongo-auth:27017/auth-service?authSource=admin
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET}
       - LOG_LEVEL=debug
@@ -96,7 +96,7 @@ services:
       - ./services/auth-service/src:/app/src:ro
       - ./shared:/app/shared:ro
     ports:
-      - "3001:3001"
+      - "3000:3000"
     depends_on:
       mongo-auth:
         condition: service_healthy
@@ -104,7 +104,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/graphql"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -115,21 +115,18 @@ services:
       dockerfile: Dockerfile.dev
     environment:
       - NODE_ENV=development
-      - PORT=3002
-      - MONGO_URI_USERS=mongodb://dev_user:dev_password@mongo-users:27017/users?authSource=admin
+      - PORT=3001
+      - MONGODB_URI=mongodb://dev_user:dev_password@mongo-users:27017/user-service?authSource=admin
       - RABBITMQ_URL=amqp://dev_user:dev_password@rabbitmq:5672/wallet_platform
-      - AUTH_SERVICE_URL=http://auth-service:3001
     volumes:
       - ./services/user-service/src:/app/src:ro
       - ./shared:/app/shared:ro
     ports:
-      - "3002:3002"
+      - "3001:3001"
     depends_on:
       mongo-users:
         condition: service_healthy
       rabbitmq:
-        condition: service_healthy
-      auth-service:
         condition: service_healthy
     restart: unless-stopped
 
@@ -139,15 +136,15 @@ services:
       dockerfile: Dockerfile.dev
     environment:
       - NODE_ENV=development
-      - PORT=3003
-      - MONGO_URI_WALLETS=mongodb://dev_user:dev_password@mongo-wallets:27017/wallets?authSource=admin
+      - PORT=3002
+      - MONGODB_URI=mongodb://dev_user:dev_password@mongo-wallets:27017/wallet-service?authSource=admin
       - RABBITMQ_URL=amqp://dev_user:dev_password@rabbitmq:5672/wallet_platform
-      - AUTH_SERVICE_URL=http://auth-service:3001
+      - AUTH_SERVICE_URL=http://auth-service:3000
     volumes:
       - ./services/wallet-service/src:/app/src:ro
       - ./shared:/app/shared:ro
     ports:
-      - "3003:3003"
+      - "3002:3002"
     depends_on:
       mongo-wallets:
         condition: service_healthy
@@ -185,7 +182,9 @@ services:
       - COLLECTOR_OTLP_ENABLED=true
 
 volumes:
-  postgres_data:
+  mongo_auth_data:
+  mongo_users_data:
+  mongo_wallets_data:
   redis_data:
   rabbitmq_data:
   prometheus_data:
