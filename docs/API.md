@@ -1,28 +1,38 @@
 # 📡 API Documentation
 
-Повна документація по API endpoints для всіх сервісів Wallet Platform.
+Повна документація по API endpoints для всіх сервісів Wallet Platform з Apollo Federation.
 
 ## 🌐 Base URLs
 
-| Service             | URL                    | Type    |
-| ------------------- | ---------------------- | ------- |
-| Auth Service        | http://localhost:5000  | GraphQL |
-| User Service        | http://localhost:5001  | REST    |
-| Wallet Service      | http://localhost:5002  | REST    |
-| RabbitMQ Management | http://localhost:15672 | Web UI  |
+| Service             | URL                    | Type    | Description                            |
+| ------------------- | ---------------------- | ------- | -------------------------------------- |
+| **Gateway Service** | http://localhost:4000  | GraphQL | **Головний API (використовуйте цей!)** |
+| Auth Service        | http://localhost:3000  | GraphQL | Прямий доступ (для розробки)           |
+| User Service        | http://localhost:3001  | GraphQL | Прямий доступ (для розробки)           |
+| Wallet Service      | http://localhost:3002  | GraphQL | Прямий доступ (для розробки)           |
+| RabbitMQ Management | http://localhost:15672 | Web UI  | Управління чергами повідомлень         |
 
-## 🔐 Auth Service (GraphQL)
+## 🌟 Gateway Service - Головний API
 
-### GraphQL Playground
+**URL**: http://localhost:4000/graphql  
+**Playground**: http://localhost:4000/graphql (у браузері)
 
-**URL**: http://localhost:5000/graphql
+### Особливості
 
-### Authentication Flow
+- **Apollo Federation** - автоматично об'єднує всі GraphQL схеми
+- **Єдина точка входу** для всіх операцій
+- **JWT авторизація** з автоматичною передачею контексту
+- **Introspection** та **Playground** в development режимі
+- **Оптимізація запитів** між сервісами
 
-#### 1. Register User
+## 🔐 Автентифікація та авторизація
+
+Всі операції автентифікації виконуються через Gateway Service.
+
+### 1. Реєстрація користувача
 
 ```graphql
-mutation RegisterUser {
+mutation Register {
   register(
     input: {
       email: "john@example.com"
@@ -37,7 +47,7 @@ mutation RegisterUser {
 }
 ```
 
-**Response:**
+**Відповідь:**
 
 ```json
 {
@@ -51,10 +61,10 @@ mutation RegisterUser {
 }
 ```
 
-#### 2. Login User
+### 2. Авторизація
 
 ```graphql
-mutation LoginUser {
+mutation Login {
   login(input: { email: "john@example.com", password: "securePassword123" }) {
     accessToken
     userId
@@ -63,15 +73,15 @@ mutation LoginUser {
 }
 ```
 
-#### 3. Health Check
+### 3. Ping перевірка
 
 ```graphql
-query HealthCheck {
+query {
   ping
 }
 ```
 
-**Response:**
+**Відповідь:**
 
 ```json
 {
@@ -122,316 +132,266 @@ query HealthCheck {
 }
 ```
 
-## 👤 User Service (REST)
+## 👤 Управління користувачами
 
-### Base URL: http://localhost:5001
+### Авторизація для захищених операцій
 
-### Authentication
-
-Всі захищені endpoints потребують JWT токен у заголовку:
-
-```
-Authorization: Bearer <jwt-token>
-```
-
-### Endpoints
-
-#### Health Check
-
-```http
-GET /health
-```
-
-**Response:**
+Додайте JWT токен в HTTP заголовки GraphQL Playground:
 
 ```json
 {
-  "status": "ok"
+  "Authorization": "Bearer YOUR_JWT_TOKEN_HERE"
 }
 ```
 
-#### Get User Profile
+### 1. Створення користувача
 
-```http
-GET /users/profile
-Authorization: Bearer <jwt-token>
-```
-
-**Response:**
-
-```json
-{
-  "id": "64f1a2b3c4d5e6f7g8h9i0j1",
-  "email": "john@example.com",
-  "name": "John Doe",
-  "profilePicture": null,
-  "phoneNumber": null,
-  "preferences": {
-    "language": "en",
-    "currency": "USD",
-    "notifications": true
-  },
-  "status": "active",
-  "createdAt": "2023-09-01T10:00:00.000Z",
-  "updatedAt": "2023-09-01T10:00:00.000Z"
-}
-```
-
-#### Update User Profile
-
-```http
-PUT /users/profile
-Authorization: Bearer <jwt-token>
-Content-Type: application/json
-
-{
-  "name": "John Smith",
-  "phoneNumber": "+1234567890",
-  "preferences": {
-    "language": "uk",
-    "currency": "UAH"
-  }
-}
-```
-
-#### Get All Users (Admin Only)
-
-```http
-GET /users
-Authorization: Bearer <admin-jwt-token>
-```
-
-#### Get User by ID (Admin Only)
-
-```http
-GET /users/:id
-Authorization: Bearer <admin-jwt-token>
-```
-
-## 💰 Wallet Service (REST)
-
-### Base URL: http://localhost:5002
-
-### Wallets
-
-#### Create Wallet
-
-```http
-POST /wallets
-Authorization: Bearer <jwt-token>
-Content-Type: application/json
-
-{
-  "name": "My Main Wallet",
-  "currency": "USD",
-  "type": "personal"
-}
-```
-
-**Response:**
-
-```json
-{
-  "id": "64f1a2b3c4d5e6f7g8h9i0j1",
-  "name": "My Main Wallet",
-  "currency": "USD",
-  "balance": 0,
-  "type": "personal",
-  "status": "active",
-  "isDefault": true,
-  "createdAt": "2023-09-01T10:00:00.000Z"
-}
-```
-
-#### Get My Wallets
-
-```http
-GET /wallets
-Authorization: Bearer <jwt-token>
-```
-
-**Response:**
-
-```json
-[
-  {
-    "id": "64f1a2b3c4d5e6f7g8h9i0j1",
-    "name": "My Main Wallet",
-    "currency": "USD",
-    "balance": 150.5,
-    "type": "personal",
-    "status": "active",
-    "isDefault": true,
-    "createdAt": "2023-09-01T10:00:00.000Z"
-  }
-]
-```
-
-#### Get Wallet by ID
-
-```http
-GET /wallets/:id
-Authorization: Bearer <jwt-token>
-```
-
-#### Update Wallet
-
-```http
-PUT /wallets/:id
-Authorization: Bearer <jwt-token>
-Content-Type: application/json
-
-{
-  "name": "Updated Wallet Name"
-}
-```
-
-#### Delete Wallet
-
-```http
-DELETE /wallets/:id
-Authorization: Bearer <jwt-token>
-```
-
-### Balance Operations
-
-#### Get Wallet Balance
-
-```http
-GET /wallets/:id/balance
-Authorization: Bearer <jwt-token>
-```
-
-**Response:**
-
-```json
-{
-  "walletId": "64f1a2b3c4d5e6f7g8h9i0j1",
-  "balance": 150.5,
-  "currency": "USD",
-  "lastUpdated": "2023-09-01T12:00:00.000Z"
-}
-```
-
-#### Deposit Money
-
-```http
-POST /wallets/:id/deposit
-Authorization: Bearer <jwt-token>
-Content-Type: application/json
-
-{
-  "amount": 100.00,
-  "description": "Salary deposit",
-  "reference": "SAL-2023-09-001"
-}
-```
-
-**Response:**
-
-```json
-{
-  "transactionId": "64f1a2b3c4d5e6f7g8h9i0j2",
-  "walletId": "64f1a2b3c4d5e6f7g8h9i0j1",
-  "type": "deposit",
-  "amount": 100.0,
-  "balanceBefore": 50.5,
-  "balanceAfter": 150.5,
-  "currency": "USD",
-  "description": "Salary deposit",
-  "status": "completed",
-  "createdAt": "2023-09-01T12:00:00.000Z"
-}
-```
-
-#### Withdraw Money
-
-```http
-POST /wallets/:id/withdraw
-Authorization: Bearer <jwt-token>
-Content-Type: application/json
-
-{
-  "amount": 25.00,
-  "description": "ATM withdrawal"
-}
-```
-
-### Transfers
-
-#### Transfer Between Wallets
-
-```http
-POST /wallets/:id/transfer
-Authorization: Bearer <jwt-token>
-Content-Type: application/json
-
-{
-  "toWalletId": "64f1a2b3c4d5e6f7g8h9i0j3",
-  "amount": 50.00,
-  "description": "Payment to friend"
-}
-```
-
-**Response:**
-
-```json
-{
-  "fromTransaction": {
-    "transactionId": "64f1a2b3c4d5e6f7g8h9i0j4",
-    "type": "transfer_out",
-    "amount": -50.0,
-    "balanceAfter": 100.5
-  },
-  "toTransaction": {
-    "transactionId": "64f1a2b3c4d5e6f7g8h9i0j5",
-    "type": "transfer_in",
-    "amount": 50.0,
-    "balanceAfter": 75.0
-  },
-  "status": "completed"
-}
-```
-
-### Transactions
-
-#### Get Transaction History
-
-```http
-GET /wallets/:id/transactions?page=1&limit=10&type=deposit
-Authorization: Bearer <jwt-token>
-```
-
-**Query Parameters:**
-
-- `page` (optional): Page number (default: 1)
-- `limit` (optional): Items per page (default: 10, max: 100)
-- `type` (optional): Transaction type filter
-- `startDate` (optional): Filter from date (ISO string)
-- `endDate` (optional): Filter to date (ISO string)
-
-**Response:**
-
-```json
-{
-  "transactions": [
-    {
-      "id": "64f1a2b3c4d5e6f7g8h9i0j2",
-      "type": "deposit",
-      "amount": 100.0,
-      "balanceBefore": 50.5,
-      "balanceAfter": 150.5,
-      "currency": "USD",
-      "description": "Salary deposit",
-      "status": "completed",
-      "createdAt": "2023-09-01T12:00:00.000Z"
+```graphql
+mutation CreateUser {
+  createUser(
+    createUserInput: {
+      email: "john@example.com"
+      firstName: "John"
+      lastName: "Doe"
+      phone: "+1234567890"
     }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 1,
-    "totalPages": 1
+  ) {
+    id
+    email
+    firstName
+    lastName
+    phone
+    isActive
+    createdAt
+    updatedAt
+  }
+}
+```
+
+### 2. Отримання всіх користувачів
+
+```graphql
+query GetAllUsers {
+  users {
+    id
+    email
+    firstName
+    lastName
+    phone
+    isActive
+    createdAt
+    updatedAt
+  }
+}
+```
+
+### 3. Отримання користувача за ID
+
+```graphql
+query GetUser {
+  user(id: "USER_ID_HERE") {
+    id
+    email
+    firstName
+    lastName
+    phone
+    isActive
+    createdAt
+    updatedAt
+  }
+}
+```
+
+### 4. Пошук користувача за email
+
+```graphql
+query GetUserByEmail {
+  userByEmail(email: "john@example.com") {
+    id
+    email
+    firstName
+    lastName
+    phone
+    isActive
+    createdAt
+    updatedAt
+  }
+}
+```
+
+### 5. Оновлення користувача
+
+```graphql
+mutation UpdateUser {
+  updateUser(
+    updateUserInput: {
+      id: "USER_ID_HERE"
+      firstName: "Jane"
+      lastName: "Smith"
+      phone: "+0987654321"
+      isActive: true
+    }
+  ) {
+    id
+    email
+    firstName
+    lastName
+    phone
+    isActive
+    updatedAt
+  }
+}
+```
+
+### 6. Видалення користувача
+
+```graphql
+mutation RemoveUser {
+  removeUser(id: "USER_ID_HERE")
+}
+```
+
+## 💰 Управління гаманцями та транзакціями
+
+### 1. Створення гаманця
+
+```graphql
+mutation CreateWallet {
+  createWallet(createWalletInput: { userId: "USER_ID_HERE", currency: USD }) {
+    id
+    userId
+    walletNumber
+    balance
+    currency
+    status
+    blockedAt
+    blockedReason
+    createdAt
+    updatedAt
+  }
+}
+```
+
+**Доступні валюти**: `USD`, `EUR`, `UAH`  
+**Статуси**: `ACTIVE`, `BLOCKED`, `SUSPENDED`
+
+### 2. Отримання всіх гаманців
+
+```graphql
+query GetAllWallets {
+  wallets {
+    id
+    userId
+    walletNumber
+    balance
+    currency
+    status
+    blockedAt
+    blockedReason
+    createdAt
+    updatedAt
+  }
+}
+```
+
+### 3. Отримання гаманця за ID
+
+```graphql
+query GetWallet {
+  wallet(id: "WALLET_ID_HERE") {
+    id
+    userId
+    walletNumber
+    balance
+    currency
+    status
+    blockedAt
+    blockedReason
+    createdAt
+    updatedAt
+  }
+}
+```
+
+### 4. Поповнення гаманця
+
+```graphql
+mutation TopUpWallet {
+  topUpWallet(
+    topUpInput: {
+      walletId: "WALLET_ID_HERE"
+      amount: 100.50
+      description: "Salary deposit"
+    }
+  ) {
+    id
+    balance
+    updatedAt
+  }
+}
+```
+
+### 5. Переказ між гаманцями
+
+```graphql
+mutation TransferBetweenWallets {
+  transferBetweenWallets(
+    transferInput: {
+      fromWalletId: "FROM_WALLET_ID"
+      toWalletId: "TO_WALLET_ID"
+      amount: 50.00
+      description: "Payment to friend"
+    }
+  ) {
+    id
+    type
+    amount
+    description
+    status
+    createdAt
+  }
+}
+```
+
+**Типи транзакцій**: `TOP_UP`, `TRANSFER`, `WITHDRAWAL`  
+**Статуси транзакцій**: `PENDING`, `COMPLETED`, `FAILED`
+
+### 6. Оновлення статусу гаманця
+
+```graphql
+mutation UpdateWallet {
+  updateWallet(
+    updateWalletInput: {
+      id: "WALLET_ID_HERE"
+      status: BLOCKED
+      blockedReason: "Suspicious activity detected"
+    }
+  ) {
+    id
+    status
+    blockedAt
+    blockedReason
+    updatedAt
+  }
+}
+```
+
+### 7. Отримання транзакцій гаманця
+
+```graphql
+query GetWalletTransactions {
+  wallet(id: "WALLET_ID_HERE") {
+    id
+    walletNumber
+    balance
+    transactions {
+      id
+      type
+      amount
+      description
+      status
+      createdAt
+    }
   }
 }
 ```
@@ -501,174 +461,649 @@ Authorization: Bearer <jwt-token>
 }
 ```
 
-## 📱 Integration Examples
+## 📱 Приклади інтеграції
 
-### Frontend JavaScript
+### Frontend JavaScript (Apollo Client)
 
 ```javascript
+import { ApolloClient, InMemoryCache, createHttpLink } from "@apollo/client";
+import { setContext } from "@apollo/client/link/context";
+import { gql } from "@apollo/client";
+
 class WalletPlatformAPI {
-  constructor(baseURL = "http://localhost") {
-    this.authService = `${baseURL}:5000/graphql`;
-    this.userService = `${baseURL}:5001`;
-    this.walletService = `${baseURL}:5002`;
-    this.token = localStorage.getItem("jwt_token");
-  }
-
-  // Auth Service
-  async login(email, password) {
-    const response = await fetch(this.authService, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: `
-          mutation Login($email: String!, $password: String!) {
-            login(input: { email: $email, password: $password }) {
-              accessToken
-              userId
-              roles
-            }
-          }
-        `,
-        variables: { email, password },
-      }),
+  constructor(gatewayURL = "http://localhost:4000/graphql") {
+    // HTTP Link до Gateway Service
+    const httpLink = createHttpLink({
+      uri: gatewayURL,
     });
 
-    const data = await response.json();
-    if (data.data?.login?.accessToken) {
-      this.token = data.data.login.accessToken;
-      localStorage.setItem("jwt_token", this.token);
-    }
-    return data;
-  }
-
-  // User Service
-  async getProfile() {
-    const response = await fetch(`${this.userService}/users/profile`, {
-      headers: { Authorization: `Bearer ${this.token}` },
-    });
-    return response.json();
-  }
-
-  // Wallet Service
-  async createWallet(name, currency) {
-    const response = await fetch(`${this.walletService}/wallets`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ name, currency }),
-    });
-    return response.json();
-  }
-
-  async transfer(fromWalletId, toWalletId, amount, description) {
-    const response = await fetch(
-      `${this.walletService}/wallets/${fromWalletId}/transfer`,
-      {
-        method: "POST",
+    // Auth Link для додавання JWT токена
+    const authLink = setContext((_, { headers }) => {
+      const token = localStorage.getItem("jwt_token");
+      return {
         headers: {
-          Authorization: `Bearer ${this.token}`,
-          "Content-Type": "application/json",
+          ...headers,
+          authorization: token ? `Bearer ${token}` : "",
         },
-        body: JSON.stringify({ toWalletId, amount, description }),
+      };
+    });
+
+    // Apollo Client
+    this.client = new ApolloClient({
+      link: authLink.concat(httpLink),
+      cache: new InMemoryCache(),
+    });
+  }
+
+  // Авторизація
+  async login(email, password) {
+    const LOGIN_MUTATION = gql`
+      mutation Login($email: String!, $password: String!) {
+        login(input: { email: $email, password: $password }) {
+          accessToken
+          userId
+          roles
+        }
       }
-    );
-    return response.json();
+    `;
+
+    const { data } = await this.client.mutate({
+      mutation: LOGIN_MUTATION,
+      variables: { email, password },
+    });
+
+    if (data.login.accessToken) {
+      localStorage.setItem("jwt_token", data.login.accessToken);
+    }
+
+    return data.login;
+  }
+
+  // Створення користувача
+  async createUser(email, firstName, lastName, phone) {
+    const CREATE_USER_MUTATION = gql`
+      mutation CreateUser($input: CreateUserInput!) {
+        createUser(createUserInput: $input) {
+          id
+          email
+          firstName
+          lastName
+          phone
+          isActive
+        }
+      }
+    `;
+
+    const { data } = await this.client.mutate({
+      mutation: CREATE_USER_MUTATION,
+      variables: {
+        input: { email, firstName, lastName, phone },
+      },
+    });
+
+    return data.createUser;
+  }
+
+  // Створення гаманця
+  async createWallet(userId, currency = "USD") {
+    const CREATE_WALLET_MUTATION = gql`
+      mutation CreateWallet($input: CreateWalletInput!) {
+        createWallet(createWalletInput: $input) {
+          id
+          userId
+          walletNumber
+          balance
+          currency
+          status
+        }
+      }
+    `;
+
+    const { data } = await this.client.mutate({
+      mutation: CREATE_WALLET_MUTATION,
+      variables: {
+        input: { userId, currency },
+      },
+    });
+
+    return data.createWallet;
+  }
+
+  // Поповнення гаманця
+  async topUpWallet(walletId, amount, description) {
+    const TOP_UP_MUTATION = gql`
+      mutation TopUpWallet($input: TopUpInput!) {
+        topUpWallet(topUpInput: $input) {
+          id
+          balance
+          updatedAt
+        }
+      }
+    `;
+
+    const { data } = await this.client.mutate({
+      mutation: TOP_UP_MUTATION,
+      variables: {
+        input: { walletId, amount, description },
+      },
+    });
+
+    return data.topUpWallet;
+  }
+
+  // Переказ між гаманцями
+  async transfer(fromWalletId, toWalletId, amount, description) {
+    const TRANSFER_MUTATION = gql`
+      mutation TransferBetweenWallets($input: TransferInput!) {
+        transferBetweenWallets(transferInput: $input) {
+          id
+          type
+          amount
+          description
+          status
+          createdAt
+        }
+      }
+    `;
+
+    const { data } = await this.client.mutate({
+      mutation: TRANSFER_MUTATION,
+      variables: {
+        input: { fromWalletId, toWalletId, amount, description },
+      },
+    });
+
+    return data.transferBetweenWallets;
+  }
+
+  // Отримання гаманців користувача
+  async getWallets() {
+    const GET_WALLETS_QUERY = gql`
+      query GetWallets {
+        wallets {
+          id
+          userId
+          walletNumber
+          balance
+          currency
+          status
+          createdAt
+        }
+      }
+    `;
+
+    const { data } = await this.client.query({
+      query: GET_WALLETS_QUERY,
+    });
+
+    return data.wallets;
   }
 }
 
-// Usage
+// Використання
 const api = new WalletPlatformAPI();
 
-// Login
-await api.login("john@example.com", "password123");
+async function example() {
+  try {
+    // 1. Авторизація
+    const authResult = await api.login("john@example.com", "password123");
+    console.log("Logged in:", authResult);
 
-// Create wallet
-const wallet = await api.createWallet("My Wallet", "USD");
+    // 2. Створення користувача
+    const user = await api.createUser(
+      "john@example.com",
+      "John",
+      "Doe",
+      "+1234567890"
+    );
+    console.log("User created:", user);
 
-// Transfer money
-await api.transfer(wallet.id, "other-wallet-id", 50.0, "Payment");
+    // 3. Створення гаманця
+    const wallet = await api.createWallet(authResult.userId, "USD");
+    console.log("Wallet created:", wallet);
+
+    // 4. Поповнення гаманця
+    const topUp = await api.topUpWallet(wallet.id, 1000.0, "Initial deposit");
+    console.log("Wallet topped up:", topUp);
+
+    // 5. Отримання всіх гаманців
+    const wallets = await api.getWallets();
+    console.log("All wallets:", wallets);
+  } catch (error) {
+    console.error("Error:", error);
+  }
+}
+
+example();
 ```
 
-### Python Client
+### TypeScript/Node.js Client (GraphQL-Request)
 
-```python
-import requests
-import json
+```typescript
+import { GraphQLClient, gql } from "graphql-request";
 
-class WalletPlatformClient:
-    def __init__(self, base_url="http://localhost"):
-        self.auth_service = f"{base_url}:5000/graphql"
-        self.user_service = f"{base_url}:5001"
-        self.wallet_service = f"{base_url}:5002"
-        self.token = None
+interface AuthResult {
+  accessToken: string;
+  userId: string;
+  roles: string[];
+}
 
-    def login(self, email, password):
-        query = """
-        mutation Login($email: String!, $password: String!) {
-            login(input: { email: $email, password: $password }) {
-                accessToken
-                userId
-                roles
-            }
+interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+interface Wallet {
+  id: string;
+  userId: string;
+  walletNumber: string;
+  balance: number;
+  currency: string;
+  status: string;
+  createdAt: string;
+}
+
+interface Transaction {
+  id: string;
+  type: string;
+  amount: number;
+  description?: string;
+  status: string;
+  createdAt: string;
+}
+
+export class WalletPlatformClient {
+  private client: GraphQLClient;
+  private token: string | null = null;
+
+  constructor(gatewayUrl = "http://localhost:4000/graphql") {
+    this.client = new GraphQLClient(gatewayUrl);
+  }
+
+  private setAuthToken(token: string): void {
+    this.token = token;
+    this.client.setHeaders({
+      authorization: `Bearer ${token}`,
+    });
+  }
+
+  // Авторизація
+  async login(email: string, password: string): Promise<AuthResult> {
+    const mutation = gql`
+      mutation Login($email: String!, $password: String!) {
+        login(input: { email: $email, password: $password }) {
+          accessToken
+          userId
+          roles
         }
-        """
+      }
+    `;
 
-        response = requests.post(
-            self.auth_service,
-            json={
-                "query": query,
-                "variables": {"email": email, "password": password}
-            }
-        )
+    const data = await this.client.request(mutation, { email, password });
+    const authResult = data.login as AuthResult;
 
-        data = response.json()
-        if data.get("data", {}).get("login", {}).get("accessToken"):
-            self.token = data["data"]["login"]["accessToken"]
+    if (authResult.accessToken) {
+      this.setAuthToken(authResult.accessToken);
+    }
 
-        return data
+    return authResult;
+  }
 
-    def get_wallets(self):
-        headers = {"Authorization": f"Bearer {self.token}"}
-        response = requests.get(f"{self.wallet_service}/wallets", headers=headers)
-        return response.json()
-
-    def deposit(self, wallet_id, amount, description):
-        headers = {
-            "Authorization": f"Bearer {self.token}",
-            "Content-Type": "application/json"
+  // Реєстрація
+  async register(
+    email: string,
+    password: string,
+    name?: string
+  ): Promise<AuthResult> {
+    const mutation = gql`
+      mutation Register($input: RegisterInput!) {
+        register(input: $input) {
+          accessToken
+          userId
+          roles
         }
-        data = {"amount": amount, "description": description}
+      }
+    `;
 
-        response = requests.post(
-            f"{self.wallet_service}/wallets/{wallet_id}/deposit",
-            headers=headers,
-            json=data
-        )
-        return response.json()
+    const data = await this.client.request(mutation, {
+      input: { email, password, name },
+    });
 
-# Usage
-client = WalletPlatformClient()
-client.login("john@example.com", "password123")
-wallets = client.get_wallets()
-client.deposit(wallets[0]["id"], 100.0, "Initial deposit")
+    const authResult = data.register as AuthResult;
+
+    if (authResult.accessToken) {
+      this.setAuthToken(authResult.accessToken);
+    }
+
+    return authResult;
+  }
+
+  // Створення користувача
+  async createUser(
+    email: string,
+    firstName: string,
+    lastName: string,
+    phone?: string
+  ): Promise<User> {
+    const mutation = gql`
+      mutation CreateUser($input: CreateUserInput!) {
+        createUser(createUserInput: $input) {
+          id
+          email
+          firstName
+          lastName
+          phone
+          isActive
+          createdAt
+        }
+      }
+    `;
+
+    const data = await this.client.request(mutation, {
+      input: { email, firstName, lastName, phone },
+    });
+
+    return data.createUser as User;
+  }
+
+  // Отримання користувачів
+  async getUsers(): Promise<User[]> {
+    const query = gql`
+      query GetUsers {
+        users {
+          id
+          email
+          firstName
+          lastName
+          phone
+          isActive
+          createdAt
+        }
+      }
+    `;
+
+    const data = await this.client.request(query);
+    return data.users as User[];
+  }
+
+  // Отримання користувача за ID
+  async getUserById(id: string): Promise<User> {
+    const query = gql`
+      query GetUser($id: String!) {
+        user(id: $id) {
+          id
+          email
+          firstName
+          lastName
+          phone
+          isActive
+          createdAt
+        }
+      }
+    `;
+
+    const data = await this.client.request(query, { id });
+    return data.user as User;
+  }
+
+  // Створення гаманця
+  async createWallet(userId: string, currency = "USD"): Promise<Wallet> {
+    const mutation = gql`
+      mutation CreateWallet($input: CreateWalletInput!) {
+        createWallet(createWalletInput: $input) {
+          id
+          userId
+          walletNumber
+          balance
+          currency
+          status
+          createdAt
+        }
+      }
+    `;
+
+    const data = await this.client.request(mutation, {
+      input: { userId, currency },
+    });
+
+    return data.createWallet as Wallet;
+  }
+
+  // Отримання всіх гаманців
+  async getWallets(): Promise<Wallet[]> {
+    const query = gql`
+      query GetWallets {
+        wallets {
+          id
+          userId
+          walletNumber
+          balance
+          currency
+          status
+          createdAt
+        }
+      }
+    `;
+
+    const data = await this.client.request(query);
+    return data.wallets as Wallet[];
+  }
+
+  // Отримання гаманця за ID
+  async getWalletById(id: string): Promise<Wallet> {
+    const query = gql`
+      query GetWallet($id: String!) {
+        wallet(id: $id) {
+          id
+          userId
+          walletNumber
+          balance
+          currency
+          status
+          createdAt
+        }
+      }
+    `;
+
+    const data = await this.client.request(query, { id });
+    return data.wallet as Wallet;
+  }
+
+  // Поповнення гаманця
+  async topUpWallet(
+    walletId: string,
+    amount: number,
+    description?: string
+  ): Promise<Wallet> {
+    const mutation = gql`
+      mutation TopUpWallet($input: TopUpInput!) {
+        topUpWallet(topUpInput: $input) {
+          id
+          balance
+          updatedAt
+        }
+      }
+    `;
+
+    const data = await this.client.request(mutation, {
+      input: { walletId, amount, description },
+    });
+
+    return data.topUpWallet as Wallet;
+  }
+
+  // Переказ між гаманцями
+  async transferBetweenWallets(
+    fromWalletId: string,
+    toWalletId: string,
+    amount: number,
+    description?: string
+  ): Promise<Transaction> {
+    const mutation = gql`
+      mutation TransferBetweenWallets($input: TransferInput!) {
+        transferBetweenWallets(transferInput: $input) {
+          id
+          type
+          amount
+          description
+          status
+          createdAt
+        }
+      }
+    `;
+
+    const data = await this.client.request(mutation, {
+      input: { fromWalletId, toWalletId, amount, description },
+    });
+
+    return data.transferBetweenWallets as Transaction;
+  }
+
+  // Оновлення статусу гаманця
+  async updateWallet(
+    id: string,
+    status?: string,
+    blockedReason?: string
+  ): Promise<Wallet> {
+    const mutation = gql`
+      mutation UpdateWallet($input: UpdateWalletInput!) {
+        updateWallet(updateWalletInput: $input) {
+          id
+          status
+          blockedAt
+          blockedReason
+          updatedAt
+        }
+      }
+    `;
+
+    const data = await this.client.request(mutation, {
+      input: { id, status, blockedReason },
+    });
+
+    return data.updateWallet as Wallet;
+  }
+}
+
+// Використання
+async function example() {
+  const client = new WalletPlatformClient();
+
+  try {
+    // 1. Реєстрація або авторизація
+    const authResult = await client.login("john@example.com", "password123");
+    console.log("Logged in:", authResult);
+
+    // 2. Створення користувача
+    const user = await client.createUser(
+      "john@example.com",
+      "John",
+      "Doe",
+      "+1234567890"
+    );
+    console.log("User created:", user);
+
+    // 3. Створення гаманця
+    const wallet = await client.createWallet(authResult.userId, "USD");
+    console.log("Wallet created:", wallet);
+
+    // 4. Поповнення гаманця
+    const topUpResult = await client.topUpWallet(
+      wallet.id,
+      1000.0,
+      "Initial deposit"
+    );
+    console.log("Wallet topped up:", topUpResult);
+
+    // 5. Отримання всіх гаманців
+    const wallets = await client.getWallets();
+    console.log("All wallets:", wallets);
+
+    // 6. Переказ між гаманцями (якщо є два гаманці)
+    if (wallets.length >= 2) {
+      const transferResult = await client.transferBetweenWallets(
+        wallets[0].id,
+        wallets[1].id,
+        100.0,
+        "Test transfer"
+      );
+      console.log("Transfer completed:", transferResult);
+    }
+  } catch (error) {
+    console.error("Error:", error);
+  }
+}
+
+// Запуск прикладу
+example();
 ```
 
-## 🔗 Postman Collection
+### Встановлення залежностей
 
-Створіть Postman collection з цими endpoints для тестування API:
+```bash
+# Для TypeScript проекту
+npm install graphql-request graphql
+
+# Для розробки
+npm install -D @types/node typescript ts-node
+```
+
+### package.json
+
+```json
+{
+  "name": "wallet-platform-client",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "ts-node example.ts",
+    "build": "tsc",
+    "start": "node dist/example.js"
+  },
+  "dependencies": {
+    "graphql": "^16.8.1",
+    "graphql-request": "^6.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  }
+}
+```
+
+## 🔗 Інструменти для тестування
+
+### GraphQL Playground (Рекомендовано)
+
+**URL**: http://localhost:4000/graphql
+
+Найкращий спосіб тестування - використовуйте вбудований GraphQL Playground:
+
+- Автоматична документація всіх операцій
+- Introspection схеми
+- Автокомпліт та валідація
+- Історія запитів
+- Можливість додавання HTTP заголовків
+
+### Postman Collection
+
+Створіть Postman collection для GraphQL тестування:
 
 ```json
 {
   "info": {
-    "name": "Wallet Platform API",
-    "description": "Complete API collection for Wallet Platform"
+    "name": "Wallet Platform GraphQL API",
+    "description": "Complete GraphQL API collection через Gateway Service"
   },
   "variable": [
     {
-      "key": "base_url",
-      "value": "http://localhost"
+      "key": "gateway_url",
+      "value": "http://localhost:4000/graphql"
     },
     {
       "key": "jwt_token",
@@ -677,19 +1112,112 @@ client.deposit(wallets[0]["id"], 100.0, "Initial deposit")
   ],
   "item": [
     {
-      "name": "Auth Service",
+      "name": "Authentication",
       "item": [
         {
           "name": "Login",
           "request": {
             "method": "POST",
-            "url": "{{base_url}}:5000/graphql",
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation Login($email: String!, $password: String!) {\n  login(input: { email: $email, password: $password }) {\n    accessToken\n    userId\n    roles\n  }\n}",
-                "variables": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
+            "url": "{{gateway_url}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
               }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation Login($email: String!, $password: String!) { login(input: { email: $email, password: $password }) { accessToken userId roles } }\",\n  \"variables\": {\n    \"email\": \"john@example.com\",\n    \"password\": \"password123\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_url}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation Register($input: RegisterInput!) { register(input: $input) { accessToken userId roles } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"john@example.com\",\n      \"password\": \"password123\",\n      \"name\": \"John Doe\"\n    }\n  }\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Management",
+      "item": [
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_url}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation CreateUser($input: CreateUserInput!) { createUser(createUserInput: $input) { id email firstName lastName phone isActive } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"john@example.com\",\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"phone\": \"+1234567890\"\n    }\n  }\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wallet Management",
+      "item": [
+        {
+          "name": "Create Wallet",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_url}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation CreateWallet($input: CreateWalletInput!) { createWallet(createWalletInput: $input) { id userId walletNumber balance currency status } }\",\n  \"variables\": {\n    \"input\": {\n      \"userId\": \"USER_ID_HERE\",\n      \"currency\": \"USD\"\n    }\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Top Up Wallet",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_url}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation TopUpWallet($input: TopUpInput!) { topUpWallet(topUpInput: $input) { id balance updatedAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"walletId\": \"WALLET_ID_HERE\",\n      \"amount\": 100.0,\n      \"description\": \"Test deposit\"\n    }\n  }\n}"
             }
           }
         }
@@ -699,6 +1227,59 @@ client.deposit(wallets[0]["id"], 100.0, "Initial deposit")
 }
 ```
 
+### cURL приклади
+
+```bash
+# Авторизація
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "mutation Login($email: String!, $password: String!) { login(input: { email: $email, password: $password }) { accessToken userId roles } }",
+    "variables": {
+      "email": "john@example.com",
+      "password": "password123"
+    }
+  }'
+
+# Створення користувача (з JWT токеном)
+curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "query": "mutation CreateUser($input: CreateUserInput!) { createUser(createUserInput: $input) { id email firstName lastName } }",
+    "variables": {
+      "input": {
+        "email": "john@example.com",
+        "firstName": "John",
+        "lastName": "Doe"
+      }
+    }
+  }'
+```
+
 ---
 
-**💡 Tip**: Використовуйте GraphQL Playground для тестування Auth Service та інструменти типу Postman або Insomnia для REST API.
+## 📚 Додаткові ресурси
+
+### Документація
+
+- **[Повний посібник з тестування](TESTING_GRAPHQL.md)** - детальні інструкції з тестування
+- **[Docker інструкції](DOCKER.md)** - налаштування та запуск через Docker
+- **[README проекту](../README.md)** - загальна інформація про проект
+
+### GraphQL ресурси
+
+- [GraphQL офіційна документація](https://graphql.org/)
+- [Apollo Federation документація](https://www.apollographql.com/docs/federation/)
+- [Apollo Client документація](https://www.apollographql.com/docs/react/)
+
+### Інструменти розробки
+
+- **GraphQL Playground**: http://localhost:4000/graphql
+- **RabbitMQ Management**: http://localhost:15672
+- **Prometheus** (опціонально): http://localhost:9090
+- **Grafana** (опціонально): http://localhost:3000
+
+---
+
+**💡 Рекомендація**: Для швидкого тестування використовуйте GraphQL Playground. Для автоматизованого тестування - Apollo Client або Python/JavaScript клієнти з цієї документації.
