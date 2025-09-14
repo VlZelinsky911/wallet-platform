@@ -27,13 +27,12 @@ import { HealthController } from "./health/health.controller";
                   process.env.USER_SERVICE_URL ||
                   "http://user-service:3001/graphql",
               },
-              // Тимчасово відключений поки не буде виправлений wallet-service
-              // {
-              //   name: "wallets",
-              //   url:
-              //     process.env.WALLET_SERVICE_URL ||
-              //     "http://wallet-service:3002/graphql",
-              // },
+              {
+                name: "wallets",
+                url:
+                  process.env.WALLET_SERVICE_URL ||
+                  "http://wallet-service:3002/graphql",
+              },
             ],
             // Більш м'які налаштування для development
             introspectionHeaders: {
