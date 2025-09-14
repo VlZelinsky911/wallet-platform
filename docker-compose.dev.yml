@@ -10,7 +10,6 @@ services:
       - MONGO_INITDB_DATABASE=auth
     volumes:
       - mongo_auth_data:/data/db
-      - ./scripts/init-mongo-auth.js:/docker-entrypoint-initdb.d/init.js:ro
     ports:
       - "27017:27017"
     healthcheck:
@@ -38,6 +37,8 @@ services:
   mongo-wallets:
     image: mongo:7
     environment:
+      - MONGO_INITDB_ROOT_USERNAME=dev_user
+      - MONGO_INITDB_ROOT_PASSWORD=dev_password
       - MONGO_INITDB_DATABASE=wallets
     volumes:
       - mongo_wallets_data:/data/db
@@ -107,15 +108,8 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:4000/health",
-          "||",
-          "exit",
-          "1",
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:4000/health || exit 1",
         ]
       interval: 30s
       timeout: 10s
@@ -144,7 +138,11 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -172,15 +170,8 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:3001/health",
-          "||",
-          "exit",
-          "1",
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1",
         ]
       interval: 30s
       timeout: 10s
@@ -212,15 +203,8 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:3002/health",
-          "||",
-          "exit",
-          "1",
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:3002/health || exit 1",
         ]
       interval: 30s
       timeout: 10s
